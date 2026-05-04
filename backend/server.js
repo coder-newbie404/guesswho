@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
@@ -7,21 +8,73 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-/*
-Simple in-memory rooms
-PoC only
-*/
 const rooms = {};
 
-/*
-Generate Room ID
-Example: A1B2C3
-*/
 function generateRoomId() {
   return Math.random()
     .toString(36)
     .substring(2, 8)
     .toUpperCase();
+}
+
+/*
+Mock AI answer
+Random Yes / No
+*/
+async function askAI(secret, question) {
+  try {
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "http://localhost:3000",
+          "X-Title": "GuessWho Game"
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-oss-120b:free", // or any free model
+          messages: [
+            {
+              role: "system",
+              content: `
+You are a strict yes/no judge for a Guess Who game.
+
+Rules:
+- Only answer: YES or NO or UNKNOWN
+- Do NOT explain
+- Do NOT add extra words
+- Be consistent with the secret identity
+              `,
+            },
+            {
+              role: "user",
+              content: `
+Secret: ${secret}
+Question: ${question}
+              `,
+            },
+          ],
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    let text =
+      data.choices?.[0]?.message?.content?.trim() || "UNKNOWN";
+
+    text = text.toUpperCase();
+
+    if (text.includes("YES")) return "Yes";
+    if (text.includes("NO")) return "No";
+
+    return "Unknown";
+  } catch (err) {
+    console.error("AI error:", err);
+    return "Unknown";
+  }
 }
 
 /*
@@ -208,7 +261,10 @@ body:
   "question": "Is your person alive?"
 }
 */
-app.post("/ask", (req, res) => {
+/*
+AI answer
+*/
+app.post("/ask", async (req, res) => {
   const { roomId, playerName, question } = req.body;
 
   if (!roomId || !playerName || !question) {
@@ -255,13 +311,10 @@ app.post("/ask", (req, res) => {
     });
   }
 
-  const normalizedQuestion = question
-    .trim()
-    .toLowerCase();
+  const normalizedQuestion = question.trim().toLowerCase();
 
   /*
-  Win condition:
-  exact guess of opponent secret
+  WIN CONDITION
   */
   if (normalizedQuestion === opponent.secret) {
     room.winner = playerName;
@@ -281,11 +334,12 @@ app.post("/ask", (req, res) => {
   }
 
   /*
-  Mock AI answer
-  Random Yes / No
+  AI ANSWER
   */
-  const answer =
-    Math.random() > 0.5 ? "Yes" : "No";
+  const answer = await askAI(
+    opponent.secret,
+    question
+  );
 
   room.history.push({
     player: playerName,
@@ -304,6 +358,8 @@ app.post("/ask", (req, res) => {
     room,
   });
 });
+
+
 
 /*
 GET ROOM STATE

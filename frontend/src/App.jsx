@@ -294,7 +294,12 @@ function App() {
     return (
       <div className="container">
         <h1>Waiting Room</h1>
-        <h2>Room ID: {roomId}</h2>
+
+        <div className="card" style={{ textAlign: "center" }}>
+          <p><strong>Room ID</strong></p>
+          <h1 style={{ letterSpacing: "3px" }}>{roomId}</h1>
+          <p>Share this code with your friend</p>
+        </div>
 
         <div className="card">
           <p>Player: {playerName}</p>
@@ -302,6 +307,10 @@ function App() {
           <button onClick={handleReady}>
             Ready / Start
           </button>
+
+          <p style={{ marginTop: "10px", color: "#666" }}>
+            Game will start when both players are ready
+          </p>
         </div>
 
         {error && <p className="error">{error}</p>}
@@ -354,14 +363,6 @@ function App() {
         <button onClick={handleCreateRoom}>
           Create New Room
         </button>
-
-        {roomId && (
-          <div style={{ marginTop: "20px", textAlign: "center" }}>
-            <p><strong>Your Room ID:</strong></p>
-            <h2>{roomId}</h2>
-            <p>Share this ID with your friend</p>
-          </div>
-        )}
       </div>
 
       <div className="card">
