@@ -1,0 +1,16 @@
+# Node.js dependencies
+/backend/node_modules/
+/frontend/node_modules/
+
+# Vite build output
+/frontend/dist/
+
+# Logs
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
